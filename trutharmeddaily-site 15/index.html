@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruthArmedDaily — Carousel Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e8e4dc;min-height:100vh;padding:24px 16px 60px;}
+.header{max-width:1200px;margin:0 auto 20px;}
+.header h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:0.1em;color:#fff;}
+.header .sub{font-size:11px;color:#444;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:20px;max-width:1200px;margin:0 auto;}
+@media(max-width:860px){.layout{grid-template-columns:1fr;}}
+.panel{background:#111;border:0.5px solid #1e1e1e;border-radius:10px;padding:16px;}
+.panel-title{font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#444;margin-bottom:10px;}
+label{display:block;font-size:11px;color:#555;margin-bottom:4px;margin-top:12px;letter-spacing:0.04em;text-transform:uppercase;}
+label:first-of-type{margin-top:0;}
+select,textarea{width:100%;background:#0a0a0a;border:0.5px solid #222;border-radius:6px;color:#e8e4dc;font-family:'Inter',sans-serif;font-size:13px;padding:8px 10px;appearance:none;-webkit-appearance:none;}
+select:focus,textarea:focus{outline:none;border-color:#555;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
+select option{background:#111;}
+textarea{min-height:70px;resize:vertical;line-height:1.6;}
+.generate-btn{width:100%;padding:12px;background:#fff;color:#000;border:none;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.1em;cursor:pointer;margin-top:12px;transition:opacity 0.15s;}
+.generate-btn:hover{opacity:0.88;}
+.generate-btn:disabled{opacity:0.35;cursor:not-allowed;}
+.status{font-size:12px;color:#444;margin-top:8px;min-height:16px;}
+.status.loading{color:#888;}
+.status.error{color:#e05c5c;}
+.status.success{color:#6db66d;}
+.slider-row{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.slider-row input[type=range]{flex:1;accent-color:#fff;}
+.slider-val{font-size:11px;color:#444;width:26px;text-align:right;}
+/* Carousel preview */
+.carousel-wrap{display:flex;flex-direction:column;gap:16px;}
+.slides-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;}
+.slide-thumb{flex-shrink:0;width:90px;height:90px;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid #222;transition:border-color 0.15s;position:relative;}
+.slide-thumb.active{border-color:#fff;}
+.slide-thumb canvas{width:100%;height:100%;}
+.slide-label{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,0.6);font-family:'Bebas Neue',sans-serif;letter-spacing:0.05em;}
+.main-preview{position:relative;width:100%;aspect-ratio:1/1;background:#0d0d0d;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.main-preview canvas{position:absolute;inset:0;width:100%;height:100%;}
+.placeholder{color:#222;font-size:13px;text-align:center;z-index:1;font-family:'Bebas Neue',sans-serif;letter-spacing:0.1em;}
+.action-row{display:flex;gap:8px;margin-top:10px;}
+.sec-btn{flex:1;padding:9px;background:transparent;border:0.5px solid #2a2a2a;color:#666;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all 0.15s;}
+.sec-btn:hover{border-color:#666;color:#fff;}
+.caption-box{background:#0a0a0a;border:0.5px solid #1e1e1e;border-radius:6px;padding:12px;font-size:13px;line-height:1.8;color:#777;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-top:8px;}
+.copy-btn{font-size:11px;color:#444;background:none;border:none;cursor:pointer;padding:3px 8px;border-radius:3px;}
+.copy-btn:hover{color:#fff;}
+.spin{display:inline-block;width:11px;height:11px;border:1.5px solid #333;border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:-1px;margin-right:5px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dot-row{display:flex;gap:6px;justify-content:center;margin-top:8px;}
+.dot{width:6px;height:6px;border-radius:50%;background:#333;cursor:pointer;transition:background 0.15s;}
+.dot.active{background:#fff;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✝ TRUTHARMEDDAILY — CAROUSEL GENERATOR</h1>
+  <div class="sub">Quote slide + supporting Bible verse slides · ESV · Monochrome</div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT: Controls -->
+  <div>
+    <div class="panel" style="margin-bottom:12px;">
+      <div class="panel-title">Content</div>
+
+      <label>Topic</label>
+      <select id="topic">
+        <option value="strength in trials">Strength in trials</option>
+        <option value="walking in purpose">Walking in purpose</option>
+        <option value="God's promises never fail">God's promises</option>
+        <option value="spiritual warfare and victory">Spiritual warfare</option>
+        <option value="identity in Christ">Identity in Christ</option>
+        <option value="faith over fear">Faith over fear</option>
+        <option value="the power of prayer">Prayer</option>
+        <option value="forgiveness and grace">Forgiveness & grace</option>
+        <option value="perseverance and not giving up">Perseverance</option>
+        <option value="the Holy Spirit living in you">Holy Spirit</option>
+      </select>
+
+      <label>Number of verse slides</label>
+      <select id="num-slides">
+        <option value="2">2 verse slides (3 total)</option>
+        <option value="3" selected>3 verse slides (4 total)</option>
+        <option value="4">4 verse slides (5 total)</option>
+      </select>
+
+      <label>Photo mood</label>
+      <select id="photo-mood">
+        <option value="praying">Praying / surrender</option>
+        <option value="cross">Cross / salvation</option>
+        <option value="warrior">Lone warrior</option>
+        <option value="athlete">Athlete / discipline</option>
+        <option value="storm">Storm / trials</option>
+        <option value="church">Church / sanctuary</option>
+        <option value="hands">Hands in prayer</option>
+        <option value="mountain">Mountain / purpose</option>
+        <option value="light">Light in darkness</option>
+        <option value="city">City / world</option>
+      </select>
+
+      <button class="generate-btn" id="gen-btn" onclick="generate()">GENERATE CAROUSEL</button>
+      <div class="status" id="gen-status"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px;">
+      <div class="panel-title">Style</div>
+
+      <label>Brightness</label>
+      <div class="slider-row">
+        <input type="range" id="brightness" min="10" max="150" value="90" oninput="document.getElementById('bv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="bv">90</span>
+      </div>
+      <label>Grain</label>
+      <div class="slider-row">
+        <input type="range" id="grain" min="0" max="100" value="35" oninput="document.getElementById('gv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="gv">35</span>
+      </div>
+      <label>Vignette</label>
+      <div class="slider-row">
+        <input type="range" id="vignette" min="0" max="100" value="25" oninput="document.getElementById('vv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="vv">25</span>
+      </div>
+      <label>Quote font size</label>
+      <div class="slider-row">
+        <input type="range" id="quotefont" min="36" max="110" value="72" oninput="document.getElementById('qv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="qv">72</span>
+      </div>
+      <label>Verse font size</label>
+      <div class="slider-row">
+        <input type="range" id="versefont" min="28" max="80" value="48" oninput="document.getElementById('vfv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="vfv">48</span>
+      </div>
+      <label>Text vertical position</label>
+      <div class="slider-row">
+        <input type="range" id="textpos" min="0" max="100" value="50" oninput="document.getElementById('tv').textContent=this.value;rerenderCurrent()">
+        <span class="slider-val" id="tv">50</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Caption</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;color:#444;">Copy and paste into Instagram</span>
+        <button class="copy-btn" onclick="copyCaption()">Copy</button>
+      </div>
+      <div class="caption-box" id="caption-text">Caption will appear after generating.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Preview -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Carousel preview — click a slide to view it</div>
+
+      <div class="slides-strip" id="slides-strip">
+        <div style="color:#333;font-size:12px;padding:30px 0;">Slides will appear here after generating.</div>
+      </div>
+
+      <div class="dot-row" id="dot-row"></div>
+
+      <div class="main-preview" style="margin-top:12px;">
+        <canvas id="main-canvas" width="1080" height="1080"></canvas>
+        <div class="placeholder" id="placeholder">✝<br><br>GENERATE TO PREVIEW</div>
+      </div>
+
+      <div class="action-row" id="action-row" style="display:none;margin-top:10px;">
+        <button class="sec-btn" onclick="generate()">↺ Regenerate all</button>
+        <button class="sec-btn" onclick="downloadCurrent()">↓ Download current slide</button>
+        <button class="sec-btn" onclick="downloadAll()">↓ Download all slides</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const UNSPLASH_KEY = '2Zgerc5nyJXquJq2l6eQIKne5JFqpMS-kVPPz-eRl6s';
+
+let slides = []; // [{type:'quote'|'verse', text, ref, photo}]
+let currentSlide = 0;
+let slideCanvases = [];
+
+async function generate() {
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+  btn.disabled = true;
+  status.className = 'status loading';
+  status.innerHTML = '<span class="spin"></span>Generating content with Claude...';
+
+  const topic = document.getElementById('topic').value;
+  const mood = document.getElementById('photo-mood').value;
+  const numVerses = parseInt(document.getElementById('num-slides').value);
+
+  try {
+    // Step 1: Generate quote + verses via Claude
+    const claudeRes = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: `You are creating an Instagram carousel for @TruthArmedDaily, a Christian motivation page. Topic: "${topic}".
+
+Generate a carousel with this exact structure. Return ONLY plain text, no JSON, no code blocks, no extra commentary:
+
+QUOTE
+[A short, punchy, bold inspiring quote about this topic — 8 to 15 words max. Should feel like something you'd stop scrolling for. Do NOT include a Bible reference here — just the quote itself.]
+
+VERSE_1
+[Full ESV Bible verse that supports the quote]
+— Book Chapter:Verse (ESV)
+
+VERSE_2
+[A different ESV Bible verse that supports the quote]
+— Book Chapter:Verse (ESV)
+
+${numVerses >= 3 ? `VERSE_3
+[A third different ESV Bible verse that supports the quote]
+— Book Chapter:Verse (ESV)` : ''}
+
+${numVerses >= 4 ? `VERSE_4
+[A fourth different ESV Bible verse that supports the quote]
+— Book Chapter:Verse (ESV)` : ''}
+
+CAPTION
+[Write 3-4 powerful sentences expanding on the quote. Bold, direct, speaks to someone who needs this today. End with a question that invites engagement. Then on a new line add 10 hashtags starting with #TruthArmedDaily]`
+        }]
+      })
+    });
+
+    const rawText = await claudeRes.text();
+    let data;
+    try { data = JSON.parse(rawText); } catch(e) { throw new Error('Function returned invalid response. Check Netlify environment variables.'); }
+    if (data.error) throw new Error(data.error.message);
+    if (!data.content || !data.content[0]) throw new Error('Empty response from Claude.');
+    const text = data.content[0].text.trim();
+
+    // Parse response
+    const parsed = parseCarouselContent(text, numVerses);
+    document.getElementById('caption-text').textContent = parsed.caption;
+
+    status.innerHTML = '<span class="spin"></span>Fetching photos from Unsplash...';
+
+    // Step 2: Fetch photos — one per slide
+    const totalSlides = 1 + numVerses;
+    const photos = await fetchPhotos(mood, totalSlides);
+
+    // Step 3: Build slides array
+    slides = [];
+    slides.push({ type: 'quote', text: parsed.quote, photo: photos[0] });
+    parsed.verses.forEach((v, i) => {
+      slides.push({ type: 'verse', text: v.text, ref: v.ref, photo: photos[Math.min(i + 1, photos.length - 1)] });
+    });
+
+    // Step 4: Render all slides
+    status.innerHTML = '<span class="spin"></span>Rendering slides...';
+    slideCanvases = [];
+    await renderAllSlides();
+
+    buildStripAndDots();
+    currentSlide = 0;
+    showSlide(0);
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('action-row').style.display = 'flex';
+    status.className = 'status success';
+    status.textContent = `✓ ${totalSlides}-slide carousel ready. Download each slide and post as a carousel on Instagram.`;
+
+  } catch(err) {
+    status.className = 'status error';
+    status.textContent = 'Error: ' + err.message;
+    console.error(err);
+  }
+  btn.disabled = false;
+}
+
+function parseCarouselContent(text, numVerses) {
+  const lines = text.split('\n');
+  let quote = '', caption = '';
+  const verses = [];
+  let mode = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    if (line === 'QUOTE') { mode = 'quote'; continue; }
+    if (line === 'VERSE_1') { mode = 'verse1'; continue; }
+    if (line === 'VERSE_2') { mode = 'verse2'; continue; }
+    if (line === 'VERSE_3') { mode = 'verse3'; continue; }
+    if (line === 'VERSE_4') { mode = 'verse4'; continue; }
+    if (line === 'CAPTION') { mode = 'caption'; continue; }
+
+    if (mode === 'quote' && !line.startsWith('VERSE') && !line.startsWith('CAPTION')) {
+      quote += (quote ? ' ' : '') + line;
+    } else if (mode.startsWith('verse')) {
+      const vIdx = parseInt(mode.replace('verse', '')) - 1;
+      if (!verses[vIdx]) verses[vIdx] = { text: '', ref: '' };
+      if (line.startsWith('—') || line.startsWith('-')) {
+        verses[vIdx].ref = line.replace(/^[—-]\s*/, '');
+      } else {
+        verses[vIdx].text += (verses[vIdx].text ? ' ' : '') + line.replace(/^[""]|[""]$/g, '');
+      }
+    } else if (mode === 'caption') {
+      caption += (caption ? '\n' : '') + line;
+    }
+  }
+
+  // Fallback if parsing fails
+  if (!quote) quote = 'God is with you. He will not fail you.';
+
+  return { quote, verses: verses.filter(v => v && v.text), caption };
+}
+
+// Expanded query variations per mood — picks one randomly each time
+const PHOTO_QUERIES = {
+  praying: [
+    'man praying silhouette dramatic',
+    'person kneeling prayer dark moody',
+    'hands raised worship cinematic',
+    'man alone praying black white',
+    'silhouette prayer sunset dramatic',
+    'woman praying alone dark background'
+  ],
+  cross: [
+    'cross silhouette dark sky dramatic',
+    'wooden cross sunset cinematic',
+    'cross church light rays',
+    'rugged cross hill dramatic sky',
+    'cross fog misty morning',
+    'cross black white dramatic clouds'
+  ],
+  warrior: [
+    'lone person walking fog moody',
+    'silhouette man walking road dramatic',
+    'person alone dark path cinematic',
+    'man standing alone dramatic sky',
+    'solitary figure misty forest',
+    'lone soldier standing dramatic'
+  ],
+  athlete: [
+    'athlete training dark dramatic',
+    'boxer training gym black white',
+    'runner silhouette dramatic sky',
+    'man lifting weights cinematic dark',
+    'athlete pushing limits dramatic',
+    'football player silhouette dramatic'
+  ],
+  storm: [
+    'storm clouds dramatic sky faith',
+    'lightning storm dark dramatic',
+    'dark storm clouds cinematic',
+    'person standing in storm dramatic',
+    'rough ocean waves dramatic storm',
+    'dramatic thunderstorm black white'
+  ],
+  church: [
+    'church cathedral light rays interior',
+    'church stained glass light dramatic',
+    'cathedral interior cinematic moody',
+    'old church dark dramatic light',
+    'church candles dark interior',
+    'chapel light rays pew dramatic'
+  ],
+  hands: [
+    'hands folded prayer close up',
+    'open hands worship dramatic light',
+    'hands reaching up light dramatic',
+    'praying hands black white close',
+    'hands together faith cinematic',
+    'cupped hands light dramatic'
+  ],
+  mountain: [
+    'mountain peak dramatic sky fog',
+    'person mountain top dramatic clouds',
+    'summit view dramatic cinematic',
+    'hiker mountain dramatic black white',
+    'mountain sunrise dramatic silhouette',
+    'rocky peak dramatic storm sky'
+  ],
+  light: [
+    'dark forest light breaking through trees',
+    'light end of tunnel dramatic',
+    'sunbeam breaking dark clouds dramatic',
+    'light darkness dramatic cinematic',
+    'rays of light dark room dramatic',
+    'sunrise breaking through darkness dramatic'
+  ],
+  city: [
+    'city night alone cinematic',
+    'person city rain dramatic black white',
+    'urban street night moody cinematic',
+    'city lights alone dramatic dark',
+    'man city rooftop dramatic night',
+    'empty street night dramatic cinematic'
+  ]
+};
+
+async function fetchPhotos(moodKey, count) {
+  const queries = PHOTO_QUERIES[moodKey] || PHOTO_QUERIES.cross;
+  // Pick a random query variation
+  const query = queries[Math.floor(Math.random() * queries.length)];
+  // Pick a random page (1-4) for variety
+  const page = Math.floor(Math.random() * 4) + 1;
+
+  const res = await fetch(
+    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${Math.min(count + 3, 10)}&page=${page}&orientation=squarish`,
+    { headers: { 'Authorization': `Client-ID ${UNSPLASH_KEY}` } }
+  );
+  const data = await res.json();
+  let photos = data.results || [];
+
+  // If page returned no results fall back to page 1
+  if (photos.length === 0) {
+    const fallback = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${Math.min(count + 3, 10)}&page=1&orientation=squarish`,
+      { headers: { 'Authorization': `Client-ID ${UNSPLASH_KEY}` } }
+    );
+    const fd = await fallback.json();
+    photos = fd.results || [];
+  }
+
+  // Shuffle the results for extra variety
+  photos = photos.sort(() => Math.random() - 0.5);
+
+  // Ensure we have enough
+  while (photos.length < count && photos.length > 0) photos.push(photos[Math.floor(Math.random() * photos.length)]);
+  return photos;
+}
+
+async function renderAllSlides() {
+  for (let i = 0; i < slides.length; i++) {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 1080; offscreen.height = 1080;
+    const ctx = offscreen.getContext('2d');
+    const s = slides[i];
+    if (s.type === 'quote') {
+      await drawQuoteSlide(ctx, s.photo, s.text, i, slides.length);
+    } else {
+      await drawVerseSlide(ctx, s.photo, s.text, s.ref, i, slides.length);
+    }
+    slideCanvases[i] = offscreen;
+  }
+}
+
+async function rerenderCurrent() {
+  if (!slides.length) return;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = 1080; offscreen.height = 1080;
+  const ctx = offscreen.getContext('2d');
+  const s = slides[currentSlide];
+  if (s.type === 'quote') {
+    await drawQuoteSlide(ctx, s.photo, s.text, currentSlide, slides.length);
+  } else {
+    await drawVerseSlide(ctx, s.photo, s.text, s.ref, currentSlide, slides.length);
+  }
+  slideCanvases[currentSlide] = offscreen;
+  // Update main canvas
+  const main = document.getElementById('main-canvas');
+  main.getContext('2d').drawImage(offscreen, 0, 0);
+  // Update thumbnail
+  const thumbs = document.querySelectorAll('.slide-thumb canvas');
+  if (thumbs[currentSlide]) {
+    thumbs[currentSlide].getContext('2d').drawImage(offscreen, 0, 0, 90, 90);
+  }
+}
+
+function applyBaseEffects(ctx, img, W, H) {
+  const brightness = parseInt(document.getElementById('brightness').value);
+  const grain = parseInt(document.getElementById('grain').value);
+  const vignette = parseInt(document.getElementById('vignette').value);
+
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, W, H);
+
+  if (img) {
+    ctx.filter = `grayscale(100%) brightness(${brightness}%)`;
+    const scale = Math.max(W / img.width, H / img.height);
+    const sw = img.width * scale, sh = img.height * scale;
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+    ctx.filter = 'none';
+  }
+
+  // Top gradient — very light
+  const topG = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+  topG.addColorStop(0, 'rgba(0,0,0,0.18)');
+  topG.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topG; ctx.fillRect(0, 0, W, H);
+
+  // Bottom gradient — light but enough for text contrast
+  const botG = ctx.createLinearGradient(0, H * 0.55, 0, H);
+  botG.addColorStop(0, 'rgba(0,0,0,0)');
+  botG.addColorStop(1, 'rgba(0,0,0,0.30)');
+  ctx.fillStyle = botG; ctx.fillRect(0, 0, W, H);
+
+  // Vignette
+  if (vignette > 0) {
+    const vig = ctx.createRadialGradient(W/2, H/2, H*0.18, W/2, H/2, H*0.85);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, `rgba(0,0,0,${vignette/100 * 0.88})`);
+    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+  }
+
+  // Grain
+  if (grain > 0) {
+    const id = ctx.getImageData(0, 0, W, H);
+    const d = id.data, amt = grain * 1.5;
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (Math.random() - 0.5) * amt;
+      d[i] = Math.min(255, Math.max(0, d[i] + n));
+      d[i+1] = Math.min(255, Math.max(0, d[i+1] + n));
+      d[i+2] = Math.min(255, Math.max(0, d[i+2] + n));
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+}
+
+function wrapLines(ctx, text, fs, maxW) {
+  ctx.font = `${fs}px 'Bebas Neue', sans-serif`;
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+    else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function drawCenteredText(ctx, text, W, H, fs, maxW, startY) {
+  // Always wrap at a FIXED max width (900px) regardless of font size
+  // This keeps the block shape consistent — only size changes, not layout
+  const fixedMaxW = Math.min(maxW, 900);
+  const lines = wrapLines(ctx, text, fs, fixedMaxW);
+  const lineH = fs * 1.18;
+
+  ctx.font = `${fs}px 'Bebas Neue', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur = 22;
+  lines.forEach((line, i) => {
+    ctx.fillStyle = '#fff';
+    ctx.fillText(line, W / 2, startY + i * lineH);
+  });
+  ctx.shadowBlur = 0;
+  return lines.length * lineH;
+}
+
+async function drawQuoteSlide(ctx, photo, quoteText, slideIdx, total) {
+  const W = 1080, H = 1080;
+  const img = photo ? await loadImg(photo.urls.regular).catch(() => null) : null;
+  applyBaseEffects(ctx, img, W, H);
+
+  const quotefs = parseInt(document.getElementById('quotefont').value);
+  const textpos = parseInt(document.getElementById('textpos').value);
+  const maxW = W - 160;
+
+  // Calculate text block using fixed wrap width so position is stable across font sizes
+  const fixedMaxW = Math.min(maxW, 900);
+  const testLines = wrapLines(ctx, quoteText.toUpperCase(), quotefs, fixedMaxW);
+  const blockH = testLines.length * quotefs * 1.18;
+
+  // Anchor: textpos controls where the CENTER of the block sits vertically
+  const minCenter = 160;
+  const maxCenter = H - 160;
+  const blockCenter = minCenter + ((maxCenter - minCenter) * textpos / 100);
+  const startY = blockCenter - blockH / 2;
+
+  // Quote marks top
+  ctx.font = `${quotefs * 1.4}px 'Bebas Neue', sans-serif`;
+  ctx.fillStyle = '#D4A853';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 10;
+  ctx.fillText('"', W / 2, startY - 30);
+  ctx.shadowBlur = 0;
+
+  // Quote text
+  const textH = drawCenteredText(ctx, quoteText.toUpperCase(), W, H, quotefs, maxW, startY);
+
+  // Gold divider
+  ctx.fillStyle = '#D4A853';
+  ctx.fillRect(W/2 - 30, startY + textH + 18, 60, 2);
+
+  // Slide indicator dots
+  drawDots(ctx, W, H, slideIdx, total);
+
+  // Handle
+  ctx.font = '22px Inter, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@TRUTHARMEDDAILY', W - 80, H - 50);
+}
+
+async function drawVerseSlide(ctx, photo, verseText, ref, slideIdx, total) {
+  const W = 1080, H = 1080;
+  const img = photo ? await loadImg(photo.urls.regular).catch(() => null) : null;
+  applyBaseEffects(ctx, img, W, H);
+
+  const versefs = parseInt(document.getElementById('versefont').value);
+  const textpos = parseInt(document.getElementById('textpos').value);
+  const maxW = W - 160;
+
+  // Calculate block height
+  ctx.font = `${versefs}px 'Bebas Neue', sans-serif`;
+  const words = verseText.toUpperCase().split(' ');
+  const testLines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && cur) { testLines.push(cur); cur = w; } else cur = test;
+  }
+  if (cur) testLines.push(cur);
+  const blockH = testLines.length * versefs * 1.15 + 80;
+
+  const minY = 120 + versefs;
+  const maxY = H - 200 - blockH;
+  const startY = minY + ((maxY - minY) * textpos / 100);
+
+  // Verse text
+  const textH = drawCenteredText(ctx, verseText.toUpperCase(), W, H, versefs, maxW, startY);
+
+  // Gold divider
+  ctx.fillStyle = '#D4A853';
+  ctx.fillRect(W/2 - 30, startY + textH + 16, 60, 2);
+
+  // Reference — always centered
+  if (ref) {
+    ctx.font = `28px 'Bebas Neue', sans-serif`;
+    ctx.fillStyle = '#D4A853';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(ref.toUpperCase(), W / 2, startY + textH + 58);
+    ctx.shadowBlur = 0;
+  }
+
+  // Slide indicator dots
+  drawDots(ctx, W, H, slideIdx, total);
+
+  // Handle
+  ctx.font = '22px Inter, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@TRUTHARMEDDAILY', W - 80, H - 50);
+}
+
+function drawDots(ctx, W, H, current, total) {
+  const dotR = 5, gap = 16;
+  const totalW = total * dotR * 2 + (total - 1) * gap;
+  const startX = (W - totalW) / 2;
+  for (let i = 0; i < total; i++) {
+    ctx.beginPath();
+    ctx.arc(startX + i * (dotR * 2 + gap) + dotR, H - 50, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = i === current ? '#ffffff' : 'rgba(255,255,255,0.25)';
+    ctx.fill();
+  }
+}
+
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function buildStripAndDots() {
+  const strip = document.getElementById('slides-strip');
+  const dotRow = document.getElementById('dot-row');
+  strip.innerHTML = '';
+  dotRow.innerHTML = '';
+
+  slides.forEach((s, i) => {
+    // Thumbnail
+    const thumb = document.createElement('div');
+    thumb.className = 'slide-thumb' + (i === 0 ? ' active' : '');
+    const tc = document.createElement('canvas');
+    tc.width = 90; tc.height = 90;
+    if (slideCanvases[i]) tc.getContext('2d').drawImage(slideCanvases[i], 0, 0, 90, 90);
+    const label = document.createElement('div');
+    label.className = 'slide-label';
+    label.textContent = i === 0 ? 'QUOTE' : `VERSE ${i}`;
+    thumb.appendChild(tc);
+    thumb.appendChild(label);
+    thumb.onclick = () => showSlide(i);
+    strip.appendChild(thumb);
+
+    // Dot
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => showSlide(i);
+    dotRow.appendChild(dot);
+  });
+}
+
+function showSlide(idx) {
+  currentSlide = idx;
+  const main = document.getElementById('main-canvas');
+  if (slideCanvases[idx]) {
+    main.getContext('2d').drawImage(slideCanvases[idx], 0, 0);
+  }
+  document.querySelectorAll('.slide-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
+function downloadCurrent() {
+  if (!slideCanvases[currentSlide]) return;
+  const a = document.createElement('a');
+  a.href = slideCanvases[currentSlide].toDataURL('image/jpeg', 0.95);
+  a.download = `trutharmeddaily-slide-${currentSlide + 1}.jpg`;
+  a.click();
+}
+
+function downloadAll() {
+  slideCanvases.forEach((c, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/jpeg', 0.95);
+      a.download = `trutharmeddaily-slide-${i + 1}.jpg`;
+      a.click();
+    }, i * 400);
+  });
+}
+
+function copyCaption() {
+  const text = document.getElementById('caption-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
