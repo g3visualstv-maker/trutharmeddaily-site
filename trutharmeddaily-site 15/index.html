@@ -523,8 +523,13 @@ function applyBaseEffects(ctx, img, W, H) {
   }
 }
 
+// Wrap at a FIXED reference font size (72px) so line breaks never change
+// When font shrinks/grows the same words stay on the same lines
+const WRAP_REFERENCE_FS = 72;
+
 function wrapLines(ctx, text, fs, maxW) {
-  ctx.font = `${fs}px 'Bebas Neue', sans-serif`;
+  // Always calculate wrapping at the reference font size
+  ctx.font = `${WRAP_REFERENCE_FS}px 'Bebas Neue', sans-serif`;
   const words = text.split(' ');
   const lines = [];
   let cur = '';
@@ -538,12 +543,11 @@ function wrapLines(ctx, text, fs, maxW) {
 }
 
 function drawCenteredText(ctx, text, W, H, fs, maxW, startY) {
-  // Always wrap at a FIXED max width (900px) regardless of font size
-  // This keeps the block shape consistent — only size changes, not layout
-  const fixedMaxW = Math.min(maxW, 900);
+  const fixedMaxW = 880;
   const lines = wrapLines(ctx, text, fs, fixedMaxW);
   const lineH = fs * 1.18;
 
+  // Now draw at the actual requested font size
   ctx.font = `${fs}px 'Bebas Neue', sans-serif`;
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.95)';
